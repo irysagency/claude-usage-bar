@@ -16,12 +16,24 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Select Xcode 16 (Swift 6 toolchain)
+        run: |
+          # macos-15 ships multiple Xcode versions side by side. Pick the newest 16.x explicitly
+          # so swift-tools-version 6.0 in Package.swift can be honored.
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "No Xcode 16 found on this runner — falling back to default."
+            XCODE=$(xcode-select -p | sed 's|/Contents/Developer||')
+          fi
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
 
       - name: Show toolchain
         run: |
