@@ -21,8 +21,8 @@ APP_NAME="ClaudeUsageBar"
 ASSET_NAME="ClaudeUsageBar.zip"
 INSTALL_DIR="/Applications"
 
-c_reset="\033[0m"; c_bold="\033[1m"; c_dim="\033[2m"
-c_green="\033[32m"; c_red="\033[31m"; c_yellow="\033[33m"; c_blue="\033[34m"
+c_reset=$'\033[0m'; c_bold=$'\033[1m'; c_dim=$'\033[2m'
+c_green=$'\033[32m'; c_red=$'\033[31m'; c_yellow=$'\033[33m'; c_blue=$'\033[34m'
 
 step()    { printf "${c_blue}==>${c_reset} ${c_bold}%s${c_reset}\n" "$*"; }
 success() { printf "${c_green}✓${c_reset} %s\n" "$*"; }
