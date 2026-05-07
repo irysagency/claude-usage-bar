@@ -132,7 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func applyClaudeRunningState(isRunning: Bool) {
-        statusItem.isVisible = isRunning
+        // Status item stays visible at all times; we just render a dimmed "asleep" icon when
+        // Claude Desktop is closed so users still have a quick affordance to launch it / quit
+        // the widget. The popover content adapts via `store.claudeIsRunning`.
+        statusItem.isVisible = true
         store.setClaudeRunning(isRunning)
         if isRunning {
             store.startRefreshing()
@@ -145,6 +148,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func renderStatusItem() {
         guard let button = statusItem.button else { return }
+
+        // Claude Desktop closed → dimmed sleep icon, no percentage. Still clickable so the user
+        // can hit "Lancer Claude" or "Quitter" from the popover.
+        if !store.claudeIsRunning {
+            applySymbol(button: button, name: "moon.zzz", tint: .tertiaryLabelColor)
+            button.title = ""
+            button.toolTip = "Claude Desktop n'est pas ouvert"
+            return
+        }
 
         if let err = store.error, store.snapshot == nil {
             applySymbol(button: button, name: "exclamationmark.triangle.fill", tint: .systemRed)
