@@ -92,6 +92,20 @@ enum Formatting {
         }
     }
 
+    /// ISO 4217 currencies with no fractional unit. For these, API minor-unit values are already
+    /// the major unit and shouldn't be divided. (Stripe maintains a similar list.)
+    private static let zeroDecimalCurrencies: Set<String> = [
+        "BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "MGA",
+        "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"
+    ]
+
+    /// Anthropic returns overage credits in the smallest currency unit (cents for EUR/USD/GBP,
+    /// whole units for JPY/KRW/etc). Convert to the major unit for display.
+    static func minorToMajor(_ amount: Double, currency: String?) -> Double {
+        let code = (currency ?? "").uppercased()
+        return zeroDecimalCurrencies.contains(code) ? amount : amount / 100.0
+    }
+
     static func formatMoney(_ amount: Double, currency: String?) -> String {
         let f = NumberFormatter()
         f.numberStyle = .decimal

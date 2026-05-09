@@ -131,10 +131,30 @@ struct ContentView: View {
 
     // MARK: - Weekly card
 
+    /// Pretty labels for the per-feature buckets. Anthropic uses internal code names in the
+    /// API; we map the well-known ones to user-facing labels (e.g. `omelette` → Claude Design).
+    /// Buckets that come back `null` or with a nil utilization are hidden entirely so the popover
+    /// only shows what the user actually consumed this week.
+    private static let modelLabels: [(label: String, key: (UsageResponse) -> UsageBucket?)] = [
+        ("Sonnet",        { $0.seven_day_sonnet }),
+        ("Opus",          { $0.seven_day_opus }),
+        ("Cowork",        { $0.seven_day_cowork }),
+        ("Claude Design", { $0.seven_day_omelette }),
+        ("OAuth Apps",    { $0.seven_day_oauth_apps }),
+    ]
+
+    private func activeModelEntries(_ usage: UsageResponse) -> [(label: String, percent: Double)] {
+        Self.modelLabels.compactMap { entry in
+            guard let bucket = entry.key(usage), let pct = bucket.utilization else { return nil }
+            return (entry.label, pct)
+        }
+    }
+
     private func weeklyCard(snapshot: UsageSnapshot) -> some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 10) {
                 let weekly = snapshot.usage.seven_day
+                let entries = activeModelEntries(snapshot.usage)
                 SectionHeader(
                     "Hebdo",
                     trailing: weekly?.utilization.map { Formatting.percent($0) }
@@ -147,14 +167,16 @@ struct ContentView: View {
                         .opacity(0.5)
                 }
 
-                Divider()
-                    .opacity(0.4)
-                    .padding(.vertical, 2)
+                if !entries.isEmpty {
+                    Divider()
+                        .opacity(0.4)
+                        .padding(.vertical, 2)
 
-                VStack(spacing: 6) {
-                    StatChip(label: "Sonnet", percent: snapshot.usage.seven_day_sonnet?.utilization)
-                    StatChip(label: "Opus", percent: snapshot.usage.seven_day_opus?.utilization)
-                    StatChip(label: "Cowork", percent: snapshot.usage.seven_day_cowork?.utilization)
+                    VStack(spacing: 6) {
+                        ForEach(entries, id: \.label) { entry in
+                            StatChip(label: entry.label, percent: entry.percent)
+                        }
+                    }
                 }
 
                 Text(Formatting.resetLine(from: weekly?.resetsAtDate))
@@ -173,8 +195,10 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionHeader("Crédits overage")
 
-                let used = extra.used_credits ?? 0
-                let limit = extra.monthly_limit ?? 0
+                // Anthropic returns these in the smallest currency unit (e.g. cents for EUR/USD).
+                // Convert to the major unit before formatting so 40 → 0,40 € and 1700 → 17 €.
+                let used = Formatting.minorToMajor(extra.used_credits ?? 0, currency: extra.currency)
+                let limit = Formatting.minorToMajor(extra.monthly_limit ?? 0, currency: extra.currency)
                 let usedStr = Formatting.formatMoney(used, currency: extra.currency)
                 let limitStr = Formatting.formatInt(limit, currency: extra.currency)
                 let pctStr: String? = extra.utilization.map { Formatting.percent($0) }
