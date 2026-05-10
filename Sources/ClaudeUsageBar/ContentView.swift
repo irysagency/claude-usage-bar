@@ -121,10 +121,7 @@ struct ContentView: View {
                         .opacity(0.5)
                 }
 
-                Text(Formatting.resetLine(from: snapshot.usage.five_hour?.resetsAtDate))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                resetFooter(date: snapshot.usage.five_hour?.resetsAtDate)
             }
         }
     }
@@ -179,13 +176,37 @@ struct ContentView: View {
                     }
                 }
 
-                Text(Formatting.resetLine(from: weekly?.resetsAtDate))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 2)
+                resetFooter(date: weekly?.resetsAtDate, suffix: entries.isEmpty ? nil : "(s'applique à tous les modèles)")
             }
         }
+    }
+
+    // MARK: - Reset footer
+
+    /// Small footer line below a usage card showing when the bucket resets. The clock icon makes
+    /// the line immediately spotable; an optional suffix clarifies when the reset covers more than
+    /// just the headline metric (e.g. weekly + per-model breakdown).
+    private func resetFooter(date: Date?, suffix: String? = nil) -> some View {
+        HStack(alignment: .top, spacing: 5) {
+            Image(systemName: "clock")
+                .font(.system(size: 10, weight: .regular))
+                .foregroundStyle(.secondary)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(Formatting.resetLine(from: date))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let suffix {
+                    Text(suffix)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 4)
+        }
+        .padding(.top, 2)
     }
 
     // MARK: - Overage card
