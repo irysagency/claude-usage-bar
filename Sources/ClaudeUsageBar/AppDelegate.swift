@@ -261,8 +261,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let url = URL(fileURLWithPath: kClaudeAppPath)
         let cfg = NSWorkspace.OpenConfiguration()
         cfg.activates = true
-        NSWorkspace.shared.openApplication(at: url, configuration: cfg) { [weak self] _, error in
-            if let error {
+        NSWorkspace.shared.openApplication(at: url, configuration: cfg) { _, error in
+            // This completion fires on `com.apple.launchservices.open-queue`, NOT the main
+            // thread. Touching anything `@MainActor`-isolated here (e.g. self.log) without
+            // hopping triggers swift_task_checkIsolatedSwift and crashes (EXC_BREAKPOINT).
+            guard let error else { return }
+            Task { @MainActor [weak self] in
                 self?.log.error("Failed to launch Claude: \(error.localizedDescription, privacy: .public)")
             }
         }
